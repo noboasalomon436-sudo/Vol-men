@@ -6,47 +6,52 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar archivos del repositorio
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Preparar Java
+      - name: Configurar Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Preparar Android SDK
+      - name: Configurar Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Instalar Gradle
+      - name: Instalar componentes del SDK
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Descomprimir el proyecto
+      - name: Descomprimir proyecto
         run: |
           mkdir -p proyecto
           unzip -o TVVolumeBoost-GitHub-Project.zip -d proyecto
 
-          echo "Archivos del proyecto:"
-          find proyecto -maxdepth 4 -type f
+      - name: Comprobar archivos
+        run: |
+          ls -la proyecto
+          test -f proyecto/settings.gradle
+          test -f proyecto/app/build.gradle
 
-      - name: Compilar aplicación Android
+      - name: Compilar APK
         working-directory: proyecto
         run: gradle assembleDebug
 
-      - name: Publicar APK para descargar
+      - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
           name: TV-Volume-Boost-APK
           path: proyecto/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
