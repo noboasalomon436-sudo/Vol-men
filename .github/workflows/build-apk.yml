@@ -1,0 +1,52 @@
+name: Descomprimir y compilar APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar archivos del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Descomprimir el proyecto
+        run: |
+          mkdir -p proyecto
+          unzip -o TVVolumeBoost-GitHub-Project.zip -d proyecto
+
+          echo "Archivos del proyecto:"
+          find proyecto -maxdepth 4 -type f
+
+      - name: Compilar aplicación Android
+        working-directory: proyecto
+        run: gradle assembleDebug
+
+      - name: Publicar APK para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: TV-Volume-Boost-APK
+          path: proyecto/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
